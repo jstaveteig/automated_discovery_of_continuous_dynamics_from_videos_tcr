@@ -13,9 +13,9 @@ class SmoothNSVEncoder(torch.nn.Module):
 
         self.nsv_dim = nsv_dim
         self.nsv_encoder = NSVEncoder(self.nsv_dim, **kwargs)
-        
+
         self.extra_layers = extra_layers
-        
+
     def forward(self, x):
 
         nsv, latent_gt = self.nsv_encoder(x)
@@ -24,18 +24,19 @@ class SmoothNSVEncoder(torch.nn.Module):
 
         return nsv, nsv_gt, latent_gt
 
+
 class SmoothNSVDecoder(torch.nn.Module):
     def __init__(self, extra_layers, nsv_dim=2, **kwargs):
         super(SmoothNSVDecoder, self).__init__()
-        
+
         self.nsv_dim = nsv_dim
 
         self.nsv_decoder = NSVDecoder(self.nsv_dim, **kwargs)
 
         self.extra_layers = extra_layers
-    
+
     def forward(self, nsv):
-        
+
         output, latent = self.nsv_decoder(nsv)
 
         return output, latent, nsv
@@ -43,14 +44,13 @@ class SmoothNSVDecoder(torch.nn.Module):
 
 class SmoothNSVAutoencoder(torch.nn.Module):
 
-
     @classmethod
     def from_model_name(cls, name, dataset, output_dir, **kwargs):
 
         params = name.split('_')
         print(params)
 
-        model = cls(dataset, params[1], params[2], params[3], params[4], params[5], params[6], params[7], params[8]=='True', name, name, output_dir, kwargs['latent_model_name']).eval()
+        model = cls(dataset, params[1], params[2], params[3], params[4], params[5], params[6], params[7], params[8]=='True', params[0], name, output_dir, kwargs['latent_model_name']).eval()
 
         model.load_smooth_refine_model_weights(name)
 
@@ -58,7 +58,6 @@ class SmoothNSVAutoencoder(torch.nn.Module):
             param.requires_grad = False
 
         return model
-
 
     def __init__(self, dataset, seed, reconstruct_loss_type, reconstruct_loss_weight, smooth_loss_type, smooth_loss_weight, regularize_loss_type, regularize_loss_weight, annealing, model_name, nsv_model_name, output_dir, latent_model_name="encoder-decoder-64", **kwargs):
         super(SmoothNSVAutoencoder, self).__init__()
@@ -75,7 +74,7 @@ class SmoothNSVAutoencoder(torch.nn.Module):
 
         self.encoder = SmoothNSVEncoder(False, nsv_dim=self.nsv_dim, **kwargs)
         self.decoder = SmoothNSVDecoder(False, nsv_dim=self.nsv_dim, **kwargs)
-        
+
         self.latent_model_name = latent_model_name
 
         self.load_hyper_model_weights()
@@ -84,11 +83,13 @@ class SmoothNSVAutoencoder(torch.nn.Module):
 
         weight_dir = os.getcwd() + '/' + self.output_dir+ '/'  + self.dataset + "/checkpoints/" + '_'.join([self.latent_model_name, str(self.seed)])
         items = os.listdir(weight_dir)
+        weight_path = os.path.join(weight_dir, "last.ckpt")
         for i in items:
             if i != "last.ckpt":
                 weight_path = os.path.join(weight_dir, i)
+                break
 
-        ckpt = torch.load(weight_path)
+        ckpt = torch.load(weight_path, map_location='cpu')
 
         hyper_model = LatentAutoEncoder(3, self.dataset, self.seed)
 
@@ -118,22 +119,23 @@ class SmoothNSVAutoencoder(torch.nn.Module):
 
         weight_dir = os.getcwd() + '/' + self.output_dir + '/' + self.dataset + "/checkpoints/" + smooth_model_name
         items = os.listdir(weight_dir)
+        weight_path = os.path.join(weight_dir, "last.ckpt")
         for i in items:
             if i != "last.ckpt":
                 weight_path = os.path.join(weight_dir, i)
+                break
 
         print("Weight path smooth model: ", weight_path)
 
-        ckpt = torch.load(weight_path)
+        ckpt = torch.load(weight_path, map_location='cpu')
 
         renamed_state_dict = OrderedDict()
         for k, v in ckpt['state_dict'].items():
-            name = k.replace('model.', '')
-
-            renamed_state_dict[name] = v
+            if k.startswith('model.'):
+                renamed_state_dict[k.replace('model.', '', 1)] = v
 
         self.load_state_dict(renamed_state_dict)
-        
+
         for param in self.encoder.parameters():
             param.requires_grad = False
         for param in self.decoder.parameters():
