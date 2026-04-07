@@ -30,6 +30,7 @@ class RegressDataModule(pl.LightningDataModule):
                  val_batch: int = 32,
                  test_batch: int = 32,
                  num_workers: int = 1,
+                 pin_memory: bool = True,
                  seed: int = 1,
                  shuffle: bool=True,
                  pred_length: int=56,
@@ -51,6 +52,7 @@ class RegressDataModule(pl.LightningDataModule):
         self.val_batch = val_batch
         self.test_batch = test_batch
         self.num_workers = num_workers
+        self.pin_memory = pin_memory
         self.seed = seed
         self.shuffle = shuffle
         self.pred_length = pred_length
@@ -92,21 +94,21 @@ class RegressDataModule(pl.LightningDataModule):
         return torch.utils.data.DataLoader(dataset=self.train_dataset,
                                                    batch_size=self.train_batch,
                                                    shuffle=self.shuffle,
-                                                   pin_memory=True,
+                                                   pin_memory=self.pin_memory,
                                                    num_workers=self.num_workers)
     
     def val_dataloader(self):
         return torch.utils.data.DataLoader(dataset=self.val_dataset,
                                                  batch_size=self.val_batch,
                                                  shuffle=False,
-                                                 pin_memory=True,
+                                                 pin_memory=self.pin_memory,
                                                  num_workers=self.num_workers)
     
     def test_dataloader(self):
         return torch.utils.data.DataLoader(dataset=self.test_dataset,
                                                   batch_size=self.test_batch,
                                                   shuffle=False,
-                                                  pin_memory=True,
+                                                  pin_memory=self.pin_memory,
                                                   num_workers=self.num_workers)
 
 
@@ -278,7 +280,7 @@ class RegressDataset(Dataset):
 
 
 class SimulationDataModule(pl.LightningDataModule):
-    def __init__(self, data_filepath: str = "./data/", dataset: str = "single_pendulum", model_name: str = 'encoder-decoder-64', train_batch: int = 32, val_batch: int = 32, test_batch: int = 32, num_workers=32, seed = 1, shuffle=True, data_annealing_list: list=[], **kwargs):
+    def __init__(self, data_filepath: str = "./data/", dataset: str = "single_pendulum", model_name: str = 'encoder-decoder-64', train_batch: int = 32, val_batch: int = 32, test_batch: int = 32, num_workers=32, pin_memory: bool=True, seed = 1, shuffle=True, data_annealing_list: list=[], **kwargs):
         super().__init__()
         
         self.data_path = data_filepath
@@ -289,6 +291,7 @@ class SimulationDataModule(pl.LightningDataModule):
         self.val_batch = val_batch
         self.test_batch = test_batch
         self.num_workers = num_workers
+        self.pin_memory = pin_memory
         self.seed = seed
 
         self.shuffle = shuffle
@@ -330,21 +333,21 @@ class SimulationDataModule(pl.LightningDataModule):
         return torch.utils.data.DataLoader(dataset=self.train_dataset,
                                                    batch_size=self.train_batch,
                                                    shuffle=self.shuffle,
-                                                   pin_memory=True,
+                                                   pin_memory=self.pin_memory,
                                                    num_workers=self.num_workers)
     
     def val_dataloader(self):
         return torch.utils.data.DataLoader(dataset=self.val_dataset,
                                                  batch_size=self.val_batch,
                                                  shuffle=False,
-                                                 pin_memory=True,
+                                                 pin_memory=self.pin_memory,
                                                  num_workers=self.num_workers)
     
     def test_dataloader(self):
         return torch.utils.data.DataLoader(dataset=self.test_dataset,
                                                   batch_size=self.test_batch,
                                                   shuffle=False,
-                                                  pin_memory=True,
+                                                  pin_memory=self.pin_memory,
                                                   num_workers=self.num_workers)
 
 

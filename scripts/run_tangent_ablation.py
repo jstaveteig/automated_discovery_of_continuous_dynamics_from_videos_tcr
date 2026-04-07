@@ -74,7 +74,7 @@ def main():
         for seed in SEEDS:
             if not args.skip_stage1:
                 stage1 = yaml.safe_load((ROOT / 'configs' / dataset / f'trial{seed}' / 'encoder-decoder-64.yaml').read_text())
-                stage1.update({'seed': seed, 'output_dir': output_dir})
+                stage1.update({'seed': seed, 'dataset': dataset, 'output_dir': output_dir})
                 stage1_path = config_root / f'{dataset}_trial{seed}_stage1.yaml'
                 stage1_path.parent.mkdir(parents=True, exist_ok=True)
                 stage1_path.write_text(yaml.safe_dump(stage1, sort_keys=False))
@@ -82,7 +82,7 @@ def main():
 
             for variant in ('smooth', 'smoothTC'):
                 stage2 = yaml.safe_load((ROOT / 'configs' / dataset / f'trial{seed}' / 'smooth.yaml').read_text())
-                stage2.update({'seed': seed, 'output_dir': output_dir, 'model_name': variant})
+                stage2.update({'seed': seed, 'dataset': dataset, 'output_dir': output_dir, 'model_name': variant})
                 if variant == 'smoothTC':
                     stage2.update(TANGENT)
                 stage2_path = config_root / f'{dataset}_trial{seed}_{variant}.yaml'
@@ -91,7 +91,7 @@ def main():
                 run([python, 'main.py', '-config', str(stage2_path), '-mode', 'test_all'], done_root / f'{dataset}_seed{seed}_{variant}_test_all.ok', env, args.dry_run, args.force)
 
                 stage3 = yaml.safe_load((ROOT / 'configs' / dataset / f'trial{seed}' / 'regress-smooth-filtered.yaml').read_text())
-                stage3.update({'seed': seed, 'output_dir': output_dir, 'nsv_model_name': smooth_name(stage2), 'filter_data': True})
+                stage3.update({'seed': seed, 'dataset': dataset, 'output_dir': output_dir, 'nsv_model_name': smooth_name(stage2), 'filter_data': True})
                 stage3_path = config_root / f'{dataset}_trial{seed}_{variant}_regress.yaml'
                 stage3_path.write_text(yaml.safe_dump(stage3, sort_keys=False))
                 run([python, 'regress.py', '-config', str(stage3_path), '-mode', 'train'], done_root / f'{dataset}_seed{seed}_{variant}_regress_train.ok', env, args.dry_run, args.force)
